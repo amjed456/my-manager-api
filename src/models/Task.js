@@ -44,6 +44,20 @@ const taskSchema = new mongoose.Schema(
   }
 );
 
+// Performance Indexes
+taskSchema.index({ project: 1 }); // Fast queries by project (most common)
+taskSchema.index({ assignedTo: 1 }); // Fast queries by assigned user
+taskSchema.index({ createdBy: 1 }); // Fast queries by creator
+taskSchema.index({ status: 1 }); // Fast queries by status
+taskSchema.index({ priority: 1 }); // Fast queries by priority
+taskSchema.index({ dueDate: 1 }); // Fast queries by due date
+taskSchema.index({ createdAt: -1 }); // Fast queries by creation date (newest first)
+taskSchema.index({ project: 1, status: 1 }); // Compound index for project + status (very common)
+taskSchema.index({ project: 1, assignedTo: 1 }); // Compound index for project + assignee
+taskSchema.index({ assignedTo: 1, status: 1 }); // Compound index for assignee + status
+taskSchema.index({ project: 1, dueDate: 1 }); // Compound index for project + due date
+taskSchema.index({ title: 'text', description: 'text' }); // Text search index
+
 // Middleware to update project progress when a task is saved
 taskSchema.post('save', async function () {
   // Get the Project model

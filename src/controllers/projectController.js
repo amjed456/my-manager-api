@@ -2,17 +2,29 @@ const Project = require('../models/Project');
 const Task = require('../models/Task');
 const User = require('../models/User');
 const notificationController = require('./notificationController');
+const { cache, CacheKeys, CacheInvalidation } = require('../utils/cache');
 
-// Get all projects for current user
+// Get all projects for current user (with caching)
 exports.getProjects = async (req, res) => {
   try {
-    // Find projects where user is the owner or a member
+    const cacheKey = CacheKeys.userProjects(req.user._id);
+    
+    // Try to get from cache first
+    const cachedProjects = cache.get(cacheKey);
+    if (cachedProjects) {
+      return res.json(cachedProjects);
+    }
+    
+    // Find projects where user is the owner
     const projects = await Project.find({
-      $or: [
-        { owner: req.user._id },
-        { members: req.user._id }
-      ]
-    }).sort({ createdAt: -1 });
+      owner: req.user._id
+    })
+    .lean() // Returns plain JavaScript objects instead of Mongoose documents
+    .sort({ createdAt: -1 })
+    .select('name description status progress dueDate startDate owner createdAt updatedAt'); // Only select needed fields
+    
+    // Cache the results for 3 minutes
+    cache.set(cacheKey, projects, 3 * 60 * 1000);
     
     res.json(projects);
   } catch (error) {
@@ -21,15 +33,27 @@ exports.getProjects = async (req, res) => {
   }
 };
 
-// Get a single project by ID
+// Get a single project by ID (with caching)
 exports.getProjectById = async (req, res) => {
   try {
-    const project = await Project.findById(req.params.id)
-      .populate('members', 'name username profilePicture')
-      .populate('owner', 'name username profilePicture');
+    const projectId = req.params.id;
+    const cacheKey = CacheKeys.project(projectId);
+    
+    // Try to get from cache first
+    let project = cache.get(cacheKey);
     
     if (!project) {
-      return res.status(404).json({ message: 'Project not found' });
+      // Not in cache, fetch from database
+      project = await Project.findById(projectId)
+        .populate('owner', 'name username profilePicture')
+        .lean(); // Use lean for better performance
+      
+      if (!project) {
+        return res.status(404).json({ message: 'Project not found' });
+      }
+      
+      // Cache the project for 5 minutes
+      cache.set(cacheKey, project, 5 * 60 * 1000);
     }
     
     // Debug ownership comparison
@@ -39,17 +63,12 @@ exports.getProjectById = async (req, res) => {
     // Get owner ID accounting for populated or non-populated owner
     const ownerId = typeof project.owner === 'object' ? project.owner._id : project.owner;
     
-    // Check if user is authorized to view this project
+    // Check if user is authorized to view this project (only owner)
     const isOwner = ownerId.toString() === req.user._id.toString();
-    const isMember = project.members.some(member => {
-      const memberId = typeof member === 'object' ? member._id : member;
-      return memberId.toString() === req.user._id.toString();
-    });
     
-    if (!isOwner && !isMember) {
-      console.log('Access denied: User is not owner or member');
+    if (!isOwner) {
+      console.log('Access denied: User is not owner');
       console.log('Is owner:', isOwner);
-      console.log('Is member:', isMember);
       return res.status(403).json({ message: 'Not authorized to access this project' });
     }
     
@@ -60,36 +79,22 @@ exports.getProjectById = async (req, res) => {
   }
 };
 
-// Create a new project
+// Create a new project (with cache invalidation)
 exports.createProject = async (req, res) => {
   try {
-    const { name, description, dueDate, members } = req.body;
+    const { name, description, dueDate } = req.body;
     
     const project = new Project({
       name,
       description,
       dueDate,
-      members: members || [],
       owner: req.user._id,
     });
     
     await project.save();
     
-    // Create notification for project creation if there are members
-    if (members && members.length > 0) {
-      try {
-        await notificationController.createNotification({
-          type: 'PROJECT_CREATED',
-          message: `${req.user.name} created a new project: "${name}"`,
-          project: project._id,
-          actor: req.user._id,
-          recipients: members
-        });
-      } catch (notifError) {
-        console.error('Failed to create project creation notification:', notifError);
-        // Continue execution even if notification creation fails
-      }
-    }
+    // Invalidate relevant caches
+    CacheInvalidation.invalidateUser(req.user._id);
     
     res.status(201).json(project);
   } catch (error) {
@@ -98,13 +103,14 @@ exports.createProject = async (req, res) => {
   }
 };
 
-// Update a project
+// Update a project (with cache invalidation)
 exports.updateProject = async (req, res) => {
   try {
-    const { name, description, status, dueDate, members } = req.body;
+    const { name, description, status, dueDate } = req.body;
+    const projectId = req.params.id;
     
     // Find project
-    const project = await Project.findById(req.params.id);
+    const project = await Project.findById(projectId);
     
     if (!project) {
       return res.status(404).json({ message: 'Project not found' });
@@ -118,47 +124,6 @@ exports.updateProject = async (req, res) => {
       return res.status(403).json({ message: 'Not authorized to update this project' });
     }
     
-    // Check for new members
-    let newMembers = [];
-    if (members) {
-      // Find members that weren't in the project before
-      newMembers = members.filter(m => !project.members.includes(m));
-      
-      // If new members were added, create notifications
-      if (newMembers.length > 0) {
-        try {
-          // Get user details for notifications
-          const memberNames = await User.find({ _id: { $in: newMembers } }, 'name');
-          const memberNameList = memberNames.map(m => m.name).join(', ');
-          
-          // Create notification for existing team members and the owner
-          const existingTeam = [...project.members, project.owner.toString()];
-          
-          await notificationController.createNotification({
-            type: 'TEAM_MEMBER_ADDED',
-            message: `${memberNames.length > 1 ? 'New team members' : 'A new team member'} ${memberNameList} ${memberNames.length > 1 ? 'were' : 'was'} added to project "${project.name}"`,
-            project: project._id,
-            actor: req.user._id,
-            recipients: existingTeam.filter(m => m.toString() !== req.user._id.toString())
-          });
-          
-          // Create notifications for the new members
-          newMembers.forEach(async (memberId) => {
-            await notificationController.createNotification({
-              type: 'TEAM_MEMBER_ADDED',
-              message: `You were added to project "${project.name}" by ${req.user.name}`,
-              project: project._id,
-              actor: req.user._id,
-              recipients: [memberId]
-            });
-          });
-        } catch (notifError) {
-          console.error('Failed to create team member notification:', notifError);
-          // Continue execution even if notification creation fails
-        }
-      }
-    }
-    
     // Check if status is changing
     const isStatusChanging = status && status !== project.status;
     const oldStatus = project.status;
@@ -168,35 +133,12 @@ exports.updateProject = async (req, res) => {
     if (description) project.description = description;
     if (status) project.status = status;
     if (dueDate) project.dueDate = dueDate;
-    if (members) project.members = members;
     
     await project.save();
     
-    // Send notification about status change if status changed
-    if (isStatusChanging) {
-      try {
-        // Get all project members for notification
-        const allMembers = [...project.members];
-        
-        // Filter out the owner (who made the change) from recipients
-        const recipientsForNotification = allMembers.filter(
-          m => m.toString() !== req.user._id.toString()
-        );
-        
-        if (recipientsForNotification.length > 0) {
-          await notificationController.createNotification({
-            type: 'PROJECT_STATUS_CHANGED',
-            message: `Project "${project.name}" status has been changed from "${oldStatus}" to "${status}" by ${req.user.name}`,
-            project: project._id,
-            actor: req.user._id,
-            recipients: recipientsForNotification
-          });
-        }
-      } catch (notifError) {
-        console.error('Failed to create status change notification:', notifError);
-        // Continue execution even if notification creation fails
-      }
-    }
+    // Invalidate caches
+    CacheInvalidation.invalidateProject(projectId, [req.user._id.toString()]);
+    CacheInvalidation.invalidateUser(req.user._id);
     
     res.json(project);
   } catch (error) {
@@ -205,10 +147,11 @@ exports.updateProject = async (req, res) => {
   }
 };
 
-// Delete a project
+// Delete a project (with cache invalidation)
 exports.deleteProject = async (req, res) => {
   try {
-    const project = await Project.findById(req.params.id);
+    const projectId = req.params.id;
+    const project = await Project.findById(projectId);
     
     if (!project) {
       return res.status(404).json({ message: 'Project not found' });
@@ -223,12 +166,16 @@ exports.deleteProject = async (req, res) => {
     }
     
     // Delete all tasks associated with this project
-    await Task.deleteMany({ project: req.params.id });
+    await Task.deleteMany({ project: projectId });
     
     // Delete the project
-    await project.deleteOne();
+    await Project.findByIdAndDelete(projectId);
     
-    res.json({ message: 'Project deleted' });
+    // Invalidate caches
+    CacheInvalidation.invalidateProject(projectId, [req.user._id.toString()]);
+    CacheInvalidation.invalidateUser(req.user._id);
+    
+    res.json({ message: 'Project and associated tasks deleted successfully' });
   } catch (error) {
     console.error('Delete project error:', error);
     res.status(500).json({ message: 'Server error', error: error.message });

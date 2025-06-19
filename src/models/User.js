@@ -62,6 +62,12 @@ const userSchema = new mongoose.Schema(
   }
 );
 
+// Performance Indexes (username and email already have unique indexes)
+userSchema.index({ role: 1 }); // Fast queries by role
+userSchema.index({ department: 1 }); // Fast queries by department
+userSchema.index({ createdAt: -1 }); // Fast queries by creation date
+userSchema.index({ name: 'text', username: 'text' }); // Text search index for user search
+
 // Hash password before saving
 userSchema.pre('save', async function (next) {
   const user = this;

@@ -6,6 +6,8 @@
   "scripts": {
     "start": "node src/index.js",
     "dev": "nodemon src/index.js",
+    "dev:monitor": "nodemon src/index.js --inspect",
+    "performance": "node scripts/performance-monitor.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
@@ -13,7 +15,8 @@
     "project management",
     "node",
     "express",
-    "mongodb"
+    "mongodb",
+    "performance"
   ],
   "author": "",
   "license": "ISC",

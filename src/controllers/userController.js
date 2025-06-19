@@ -3,6 +3,7 @@ const Project = require('../models/Project');
 const Task = require('../models/Task');
 const jwt = require('jsonwebtoken');
 const config = require('../config');
+const { cache, CacheKeys, CacheInvalidation } = require('../utils/cache');
 
 // Generate JWT token
 const generateToken = (userId) => {
@@ -87,12 +88,24 @@ exports.login = async (req, res) => {
   }
 };
 
-// Get user profile
+// Get user profile (with caching)
 exports.getProfile = async (req, res) => {
   try {
-    const user = await User.findById(req.user._id).select('-password');
+    const userId = req.user._id;
+    const cacheKey = CacheKeys.user(userId);
+    
+    // Try to get from cache first
+    let user = cache.get(cacheKey);
+    
     if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+      // Not in cache, fetch from database
+      user = await User.findById(userId).select('-password').lean();
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+      
+      // Cache the user for 10 minutes
+      cache.set(cacheKey, user, 10 * 60 * 1000);
     }
     
     res.json(user);
@@ -102,10 +115,11 @@ exports.getProfile = async (req, res) => {
   }
 };
 
-// Update user profile
+// Update user profile (with cache invalidation)
 exports.updateProfile = async (req, res) => {
   try {
     const { name, jobTitle, department, phone, preferences } = req.body;
+    const userId = req.user._id;
     
     // Fields to update
     const updateFields = {};
@@ -116,10 +130,13 @@ exports.updateProfile = async (req, res) => {
     if (preferences) updateFields.preferences = preferences;
     
     const user = await User.findByIdAndUpdate(
-      req.user._id,
+      userId,
       { $set: updateFields },
       { new: true }
-    ).select('-password');
+    ).select('-password').lean();
+    
+    // Invalidate user cache
+    CacheInvalidation.invalidateUser(userId);
     
     res.json(user);
   } catch (error) {
@@ -128,15 +145,29 @@ exports.updateProfile = async (req, res) => {
   }
 };
 
-// Get all available users (excluding current user)
+// Get all available users (excluding current user) - with caching
 exports.getAllUsers = async (req, res) => {
   try {
-    // Find all users except the current user
-    const users = await User.find({ _id: { $ne: req.user._id } })
-      .select('name username profilePicture email')
-      .sort({ name: 1 });
+    const cacheKey = CacheKeys.availableUsers();
     
-    res.json(users);
+    // Try to get from cache first
+    let users = cache.get(cacheKey);
+    
+    if (!users) {
+      // Not in cache, fetch from database
+      users = await User.find({ _id: { $ne: req.user._id } })
+        .select('name username profilePicture email')
+        .lean()
+        .sort({ name: 1 });
+      
+      // Cache the results for 5 minutes
+      cache.set(cacheKey, users, 5 * 60 * 1000);
+    }
+    
+    // Filter out current user from cached results (in case cache was set by different user)
+    const filteredUsers = users.filter(user => user._id.toString() !== req.user._id.toString());
+    
+    res.json(filteredUsers);
   } catch (error) {
     console.error('Get all users error:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
@@ -153,24 +184,21 @@ exports.adminGetAllUsers = async (req, res) => {
       .select('-password')
       .sort({ createdAt: -1 });
     
-    // Get all projects to check memberships
-    const projects = await Project.find().select('name members owner');
+    // Get all projects to check ownership
+    const projects = await Project.find().select('name owner');
     
     // Add project information to each user
     const usersWithProjects = users.map(user => {
       const userObj = user.toObject();
       
-      // Find projects where user is a member or owner
+      // Find projects where user is the owner
       userObj.projects = projects.filter(project => {
         const isOwner = project.owner.toString() === user._id.toString();
-        const isMember = project.members.some(memberId => 
-          memberId.toString() === user._id.toString()
-        );
-        return isOwner || isMember;
+        return isOwner;
       }).map(project => ({
         _id: project._id,
         name: project.name,
-        role: project.owner.toString() === user._id.toString() ? 'owner' : 'member'
+        role: 'owner'
       }));
       
       return userObj;
@@ -199,34 +227,15 @@ exports.adminDeleteUser = async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
     
-    // Remove user from all projects where they are a member
-    await Project.updateMany(
-      { members: userId },
-      { $pull: { members: userId } }
-    );
-    
-    // For projects owned by the user, either:
-    // 1. Transfer ownership to oldest member
-    // 2. Delete the project if no members
+    // For projects owned by the user, delete them and their associated data
     const ownedProjects = await Project.find({ owner: userId });
     
     for (const project of ownedProjects) {
-      if (project.members.length > 0) {
-        // Get the first member to make them the new owner
-        const newOwnerId = project.members[0];
-        
-        // Update project with new owner and remove them from members
-        project.owner = newOwnerId;
-        project.members = project.members.filter(
-          memberId => memberId.toString() !== newOwnerId.toString()
-        );
-        
-        await project.save();
-      } else {
-        // No members, delete project and its tasks
-        await Task.deleteMany({ project: project._id });
-        await project.deleteOne();
-      }
+      // Delete all tasks associated with this project
+      await Task.deleteMany({ project: project._id });
+      
+      // Delete the project
+      await project.deleteOne();
     }
     
     // Delete the user
