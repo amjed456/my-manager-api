@@ -51,6 +51,13 @@ const createSiteNote = async (req, res) => {
       date
     } = req.body;
     
+    console.log('Site note creation request:', {
+      apartmentId,
+      body: req.body,
+      files: req.files ? req.files.length : 0,
+      user: req.user ? req.user.id : 'no user'
+    });
+    
     // Check if user has access to the apartment
     const apartment = await Apartment.findById(apartmentId);
     if (!apartment) {
@@ -85,6 +92,13 @@ const createSiteNote = async (req, res) => {
       siteNote.images = photoUrls.map(url => ({ url, caption: '', uploadedAt: new Date() }));
     }
     
+    console.log('About to save site note:', {
+      apartment: siteNote.apartment,
+      project: siteNote.project,
+      author: siteNote.author,
+      title: siteNote.title
+    });
+    
     await siteNote.save();
     
     // Populate author and assignedTo info for response
@@ -96,7 +110,8 @@ const createSiteNote = async (req, res) => {
     res.status(201).json(siteNote);
   } catch (error) {
     console.error('Error creating site note:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('Error stack:', error.stack);
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
 
