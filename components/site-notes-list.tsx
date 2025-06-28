@@ -19,7 +19,11 @@ interface SiteNote {
   title: string
   description: string
   location: string
-  photos: string[]
+  images: Array<{
+    url: string
+    caption?: string
+    uploadedAt?: string
+  }>
   createdAt: string
 }
 
@@ -211,9 +215,9 @@ export default function SiteNotesList({ apartmentId }: SiteNotesListProps) {
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
-                    {note.photos.length > 0 && (
+                    {note.images.length > 0 && (
                       <Badge variant="outline">
-                        {note.photos.length} photos
+                        {note.images.length} photos
                       </Badge>
                     )}
                   </div>
@@ -273,14 +277,14 @@ export default function SiteNotesList({ apartmentId }: SiteNotesListProps) {
                 <p className="text-sm whitespace-pre-wrap">{selectedNote.description}</p>
               </div>
 
-              {selectedNote.photos.length > 0 && (
+              {selectedNote.images.length > 0 && (
                 <div>
-                  <h5 className="font-medium mb-2">Photos ({selectedNote.photos.length})</h5>
+                  <h5 className="font-medium mb-2">Photos ({selectedNote.images.length})</h5>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                    {selectedNote.photos.map((photo, index) => (
+                    {selectedNote.images.map((image, index) => (
                       <img
                         key={index}
-                        src={photo}
+                        src={image.url}
                         alt={`Site note photo ${index + 1}`}
                         className="w-full h-32 object-cover rounded-md"
                       />

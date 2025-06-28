@@ -9,7 +9,11 @@ export interface SiteNote {
   title: string;
   description: string;
   location: string;
-  photos: string[];
+  images: Array<{
+    url: string;
+    caption?: string;
+    uploadedAt?: string;
+  }>;
   createdAt: string;
   updatedAt: string;
 }
