@@ -81,6 +81,25 @@ const createFieldInstruction = async (req, res) => {
     
     const mappedPriority = priorityMap[priority?.toLowerCase()] || 'Medium';
     
+    // Map frontend instruction types to backend category enum values
+    const categoryMap = {
+      'Construction Task': 'Technical',
+      'Installation': 'Technical',
+      'Repair/Maintenance': 'Technical',
+      'Inspection': 'Quality',
+      'Safety Protocol': 'Safety',
+      'Quality Control': 'Quality',
+      'Material Handling': 'Technical',
+      'Equipment Operation': 'Technical',
+      'Safety': 'Safety',
+      'Quality': 'Quality',
+      'Schedule': 'Schedule',
+      'Technical': 'Technical',
+      'Other': 'Other'
+    };
+    
+    const mappedCategory = categoryMap[instructionType] || categoryMap[category] || 'Other';
+    
     // Build instructions text from the various fields
     let instructionText = instructions || description || '';
     if (materials) instructionText += `\n\nMaterials: ${materials}`;
@@ -108,7 +127,7 @@ const createFieldInstruction = async (req, res) => {
       description,
       images: images || [],
       priority: mappedPriority,
-      category: category || instructionType || 'Other',
+      category: mappedCategory,
       assignedTo: assignedTo || null,
       instructions: instructionText,
       dueDate: dueDate || null,

@@ -83,6 +83,25 @@ const createSiteNote = async (req, res) => {
     
     const mappedPriority = priorityMap[priority?.toLowerCase()] || 'Medium';
     
+    // Map frontend note types to backend category enum values
+    const categoryMap = {
+      'General Observation': 'Other',
+      'Issue/Problem': 'Other',
+      'Safety Concern': 'Other',
+      'Quality Check': 'Other',
+      'Material Delivery': 'Other',
+      'Equipment Issue': 'Other',
+      'Weather Impact': 'Other',
+      'Structural': 'Structural',
+      'Electrical': 'Electrical',
+      'Plumbing': 'Plumbing',
+      'HVAC': 'HVAC',
+      'Finishing': 'Finishing',
+      'Other': 'Other'
+    };
+    
+    const mappedCategory = categoryMap[noteType] || categoryMap[category] || 'Other';
+    
     const siteNote = new SiteNote({
       apartment: apartmentId,
       project: apartment.project,
@@ -91,7 +110,7 @@ const createSiteNote = async (req, res) => {
       description,
       images: images || [],
       priority: mappedPriority,
-      category: category || noteType || 'Other',
+      category: mappedCategory,
       assignedTo: assignedTo || null,
       notes: notes || location || '',
     });
