@@ -64,8 +64,7 @@ const fieldInstructionSchema = new mongoose.Schema(
       default: null,
     },
     assignedTo: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
+      type: String,
       default: null,
     },
     dueDate: {

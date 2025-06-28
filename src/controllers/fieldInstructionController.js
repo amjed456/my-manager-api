@@ -24,7 +24,6 @@ const getFieldInstructionsByApartment = async (req, res) => {
     
     const instructions = await FieldInstruction.find({ apartment: apartmentId })
       .populate('author', 'name email')
-      .populate('assignedTo', 'name email')
       .sort({ createdAt: -1 });
     
     res.json(instructions);
@@ -149,11 +148,8 @@ const createFieldInstruction = async (req, res) => {
     
     await fieldInstruction.save();
     
-    // Populate author and assignedTo info for response
+    // Populate author info for response
     await fieldInstruction.populate('author', 'name email');
-    if (fieldInstruction.assignedTo) {
-      await fieldInstruction.populate('assignedTo', 'name email');
-    }
     
     res.status(201).json(fieldInstruction);
   } catch (error) {
@@ -228,11 +224,8 @@ const updateFieldInstruction = async (req, res) => {
     
     await fieldInstruction.save();
     
-    // Populate author and assignedTo info for response
+    // Populate author info for response
     await fieldInstruction.populate('author', 'name email');
-    if (fieldInstruction.assignedTo) {
-      await fieldInstruction.populate('assignedTo', 'name email');
-    }
     
     res.json(fieldInstruction);
   } catch (error) {
@@ -281,8 +274,7 @@ const getFieldInstructionById = async (req, res) => {
     const { instructionId } = req.params;
     
     const fieldInstruction = await FieldInstruction.findById(instructionId)
-      .populate('author', 'name email')
-      .populate('assignedTo', 'name email');
+      .populate('author', 'name email');
     
     if (!fieldInstruction) {
       return res.status(404).json({ message: 'Field instruction not found' });
@@ -335,7 +327,6 @@ const getFieldInstructionsByStatus = async (req, res) => {
       status: status 
     })
       .populate('author', 'name email')
-      .populate('assignedTo', 'name email')
       .sort({ createdAt: -1 });
     
     res.json(instructions);
