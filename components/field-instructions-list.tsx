@@ -253,9 +253,9 @@ export default function FieldInstructionsList({ apartmentId }: FieldInstructions
                   </div>
                   <div className="flex items-center gap-2">
                     <Badge variant="outline">
-                      {instruction.steps.length} steps
+                      {instruction.steps?.length || 0} steps
                     </Badge>
-                    {instruction.images.length > 0 && (
+                    {instruction.images?.length > 0 && (
                       <Badge variant="outline">
                         {instruction.images.length} photos
                       </Badge>
@@ -352,9 +352,9 @@ export default function FieldInstructionsList({ apartmentId }: FieldInstructions
               )}
 
               <div>
-                <h5 className="font-medium mb-3">Work Steps ({selectedInstruction.steps.length})</h5>
+                <h5 className="font-medium mb-3">Work Steps ({selectedInstruction.steps?.length || 0})</h5>
                 <div className="space-y-3">
-                  {selectedInstruction.steps.map((step) => (
+                  {selectedInstruction.steps?.map((step) => (
                     <div key={step.id} className="flex items-start gap-3 p-3 border rounded-lg">
                       <div className="flex-shrink-0 w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-medium">
                         {step.order}
@@ -363,7 +363,9 @@ export default function FieldInstructionsList({ apartmentId }: FieldInstructions
                         <p className="text-sm">{step.description}</p>
                       </div>
                     </div>
-                  ))}
+                  )) || (
+                    <p className="text-sm text-muted-foreground">No steps defined</p>
+                  )}
                 </div>
               </div>
 
