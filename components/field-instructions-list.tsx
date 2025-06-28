@@ -28,8 +28,12 @@ interface FieldInstruction {
     description: string
     order: number
   }>
-  photos: string[]
-  status: "pending" | "in-progress" | "completed"
+  images: Array<{
+    url: string
+    caption?: string
+    uploadedAt?: string
+  }>
+  status: "Created" | "Work Started" | "Completed"
   createdAt: string
 }
 
@@ -45,9 +49,9 @@ const PRIORITY_COLORS = {
 }
 
 const STATUS_COLORS = {
-  pending: "bg-gray-100 text-gray-800",
-  "in-progress": "bg-blue-100 text-blue-800",
-  completed: "bg-green-100 text-green-800"
+  "Created": "bg-gray-100 text-gray-800",
+  "Work Started": "bg-blue-100 text-blue-800",
+  "Completed": "bg-green-100 text-green-800"
 }
 
 export default function FieldInstructionsList({ apartmentId }: FieldInstructionsListProps) {
@@ -101,7 +105,7 @@ export default function FieldInstructionsList({ apartmentId }: FieldInstructions
   const getOverdueInstructions = () => {
     const today = new Date()
     return instructions.filter(instruction => 
-      instruction.dueDate && new Date(instruction.dueDate) < today && instruction.status !== "completed"
+      instruction.dueDate && new Date(instruction.dueDate) < today && instruction.status !== "Completed"
     )
   }
 
@@ -185,16 +189,16 @@ export default function FieldInstructionsList({ apartmentId }: FieldInstructions
       {instructions.length > 0 && (
         <div className="grid grid-cols-3 gap-2">
           <div className="bg-gray-50 p-3 rounded-lg">
-            <div className="text-sm text-gray-600">Pending</div>
-            <div className="text-lg font-semibold text-gray-800">{getStatusCount("pending")}</div>
+            <div className="text-sm text-gray-600">Created</div>
+            <div className="text-lg font-semibold text-gray-800">{getStatusCount("Created")}</div>
           </div>
           <div className="bg-blue-50 p-3 rounded-lg">
-            <div className="text-sm text-blue-600">In Progress</div>
-            <div className="text-lg font-semibold text-blue-800">{getStatusCount("in-progress")}</div>
+            <div className="text-sm text-blue-600">Work Started</div>
+            <div className="text-lg font-semibold text-blue-800">{getStatusCount("Work Started")}</div>
           </div>
           <div className="bg-green-50 p-3 rounded-lg">
             <div className="text-sm text-green-600">Completed</div>
-            <div className="text-lg font-semibold text-green-800">{getStatusCount("completed")}</div>
+            <div className="text-lg font-semibold text-green-800">{getStatusCount("Completed")}</div>
           </div>
         </div>
       )}
@@ -251,9 +255,9 @@ export default function FieldInstructionsList({ apartmentId }: FieldInstructions
                     <Badge variant="outline">
                       {instruction.steps.length} steps
                     </Badge>
-                    {instruction.photos.length > 0 && (
+                    {instruction.images.length > 0 && (
                       <Badge variant="outline">
-                        {instruction.photos.length} photos
+                        {instruction.images.length} photos
                       </Badge>
                     )}
                   </div>
@@ -363,14 +367,14 @@ export default function FieldInstructionsList({ apartmentId }: FieldInstructions
                 </div>
               </div>
 
-              {selectedInstruction.photos.length > 0 && (
+              {selectedInstruction.images.length > 0 && (
                 <div>
-                  <h5 className="font-medium mb-2">Reference Photos ({selectedInstruction.photos.length})</h5>
+                  <h5 className="font-medium mb-2">Reference Photos ({selectedInstruction.images.length})</h5>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                    {selectedInstruction.photos.map((photo, index) => (
+                    {selectedInstruction.images.map((image, index) => (
                       <img
                         key={index}
-                        src={photo}
+                        src={image.url}
                         alt={`Instruction photo ${index + 1}`}
                         className="w-full h-32 object-cover rounded-md"
                       />

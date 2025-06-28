@@ -18,8 +18,12 @@ export interface FieldInstruction {
     description: string;
     order: number;
   }>;
-  photos: string[];
-  status: "pending" | "in-progress" | "completed";
+  images: Array<{
+    url: string;
+    caption?: string;
+    uploadedAt?: string;
+  }>;
+  status: "Created" | "Work Started" | "Completed";
   createdAt: string;
   updatedAt: string;
 }
@@ -124,7 +128,7 @@ export const fieldInstructionService = {
   },
 
   // Update instruction status
-  async updateInstructionStatus(instructionId: string, status: "pending" | "in-progress" | "completed"): Promise<FieldInstruction> {
+  async updateInstructionStatus(instructionId: string, status: "Created" | "Work Started" | "Completed"): Promise<FieldInstruction> {
     try {
       const response = await api.patch(`/field-instructions/${instructionId}/status`, { status });
       return response.data;
