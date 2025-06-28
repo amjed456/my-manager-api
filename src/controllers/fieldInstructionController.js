@@ -56,6 +56,13 @@ const createFieldInstruction = async (req, res) => {
       steps
     } = req.body;
     
+    console.log('Field instruction creation request:', {
+      apartmentId,
+      body: req.body,
+      files: req.files ? req.files.length : 0,
+      user: req.user ? req.user.id : 'no user'
+    });
+    
     // Check if user has access to the apartment
     const apartment = await Apartment.findById(apartmentId);
     if (!apartment) {
@@ -151,7 +158,8 @@ const createFieldInstruction = async (req, res) => {
     res.status(201).json(fieldInstruction);
   } catch (error) {
     console.error('Error creating field instruction:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('Error stack:', error.stack);
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
 
