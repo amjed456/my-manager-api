@@ -20,39 +20,19 @@ const progressEntrySchema = new mongoose.Schema(
     date: {
       type: Date,
       required: true,
-      default: Date.now,
     },
-    summary: {
+    workDescription: {
       type: String,
       required: true,
     },
-    workPoints: [{
-      type: String,
-      required: true,
-    }],
-    images: [{
-      url: {
-        type: String,
-        required: true,
-      },
-      caption: {
-        type: String,
-        default: '',
-      },
-      uploadedAt: {
-        type: Date,
-        default: Date.now,
-      },
-    }],
     hoursWorked: {
       type: Number,
+      required: true,
       min: 0,
-      default: 0,
     },
-    notes: {
+    photos: [{
       type: String,
-      default: '',
-    },
+    }],
   },
   {
     timestamps: true,

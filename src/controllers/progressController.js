@@ -18,7 +18,7 @@ const getProgressEntriesByApartment = async (req, res) => {
       return res.status(404).json({ message: 'Project not found' });
     }
     
-    if (project.owner.toString() !== req.user.id) {
+    if (project.owner.toString() !== req.user._id.toString()) {
       return res.status(403).json({ message: 'Not authorized to access this apartment' });
     }
     
@@ -37,7 +37,12 @@ const getProgressEntriesByApartment = async (req, res) => {
 const createProgressEntry = async (req, res) => {
   try {
     const { apartmentId } = req.params;
-    const { summary, workPoints, images, hoursWorked, notes, date } = req.body;
+    const { workDescription, hoursWorked, date } = req.body;
+    
+    // Basic validation
+    if (!workDescription || !hoursWorked || !date) {
+      return res.status(400).json({ message: 'Missing required fields' });
+    }
     
     // Check if user has access to the apartment
     const apartment = await Apartment.findById(apartmentId);
@@ -50,20 +55,23 @@ const createProgressEntry = async (req, res) => {
       return res.status(404).json({ message: 'Project not found' });
     }
     
-    if (project.owner.toString() !== req.user.id) {
+    if (project.owner.toString() !== req.user._id.toString()) {
       return res.status(403).json({ message: 'Not authorized to create entries for this apartment' });
+    }
+    
+    let photoUrls = [];
+    if (req.files) {
+      photoUrls = req.files.map(file => `data:${file.mimetype};base64,${file.buffer.toString('base64')}`);
     }
     
     const entry = new ProgressEntry({
       apartment: apartmentId,
       project: apartment.project,
       author: req.user.id,
-      summary,
-      workPoints,
-      images: images || [],
-      hoursWorked: hoursWorked || 0,
-      notes: notes || '',
-      date: date || new Date(),
+      workDescription,
+      hoursWorked,
+      photos: photoUrls,
+      date,
     });
     
     await entry.save();
@@ -82,7 +90,7 @@ const createProgressEntry = async (req, res) => {
 const updateProgressEntry = async (req, res) => {
   try {
     const { entryId } = req.params;
-    const { summary, workPoints, images, hoursWorked, notes, date } = req.body;
+    const {  workDescription, workPoints, images, hoursWorked, notes, date } = req.body;
     
     const entry = await ProgressEntry.findById(entryId);
     if (!entry) {
@@ -100,7 +108,7 @@ const updateProgressEntry = async (req, res) => {
       return res.status(404).json({ message: 'Project not found' });
     }
     
-    if (project.owner.toString() !== req.user.id) {
+    if (project.owner.toString() !== req.user._id.toString()) {
       return res.status(403).json({ message: 'Not authorized to update this entry' });
     }
     
@@ -145,7 +153,7 @@ const deleteProgressEntry = async (req, res) => {
       return res.status(404).json({ message: 'Project not found' });
     }
     
-    if (project.owner.toString() !== req.user.id) {
+    if (project.owner.toString() !== req.user._id.toString()) {
       return res.status(403).json({ message: 'Not authorized to delete this entry' });
     }
     
@@ -181,7 +189,7 @@ const getProgressEntryById = async (req, res) => {
       return res.status(404).json({ message: 'Project not found' });
     }
     
-    if (project.owner.toString() !== req.user.id) {
+    if (project.owner.toString() !== req.user._id.toString()) {
       return res.status(403).json({ message: 'Not authorized to access this entry' });
     }
     
@@ -208,7 +216,7 @@ const getProgressEntriesByDate = async (req, res) => {
       return res.status(404).json({ message: 'Project not found' });
     }
     
-    if (project.owner.toString() !== req.user.id) {
+    if (project.owner.toString() !== req.user._id.toString()) {
       return res.status(403).json({ message: 'Not authorized to access this apartment' });
     }
     

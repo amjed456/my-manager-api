@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const auth = require('../middleware/auth');
+const upload = require('../middleware/upload');
 const {
   getProgressEntriesByApartment,
   createProgressEntry,
@@ -20,7 +21,7 @@ router.get('/apartment/:apartmentId', getProgressEntriesByApartment);
 router.get('/apartment/:apartmentId/date/:date', getProgressEntriesByDate);
 
 // Create a new progress entry for an apartment
-router.post('/apartment/:apartmentId', createProgressEntry);
+router.post('/apartment/:apartmentId', upload, createProgressEntry);
 
 // Get a single progress entry
 router.get('/:entryId', getProgressEntryById);

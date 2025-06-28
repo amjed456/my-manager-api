@@ -18,7 +18,7 @@ const getFieldInstructionsByApartment = async (req, res) => {
       return res.status(404).json({ message: 'Project not found' });
     }
     
-    if (project.owner.toString() !== req.user.id) {
+    if (project.owner.toString() !== req.user._id.toString()) {
       return res.status(403).json({ message: 'Not authorized to access this apartment' });
     }
     
@@ -61,7 +61,7 @@ const createFieldInstruction = async (req, res) => {
       return res.status(404).json({ message: 'Project not found' });
     }
     
-    if (project.owner.toString() !== req.user.id) {
+    if (project.owner.toString() !== req.user._id.toString()) {
       return res.status(403).json({ message: 'Not authorized to create instructions for this apartment' });
     }
     
@@ -130,7 +130,7 @@ const updateFieldInstruction = async (req, res) => {
       return res.status(404).json({ message: 'Project not found' });
     }
     
-    if (project.owner.toString() !== req.user.id) {
+    if (project.owner.toString() !== req.user._id.toString()) {
       return res.status(403).json({ message: 'Not authorized to update this instruction' });
     }
     
@@ -194,7 +194,7 @@ const deleteFieldInstruction = async (req, res) => {
       return res.status(404).json({ message: 'Project not found' });
     }
     
-    if (project.owner.toString() !== req.user.id) {
+    if (project.owner.toString() !== req.user._id.toString()) {
       return res.status(403).json({ message: 'Not authorized to delete this instruction' });
     }
     
@@ -231,7 +231,7 @@ const getFieldInstructionById = async (req, res) => {
       return res.status(404).json({ message: 'Project not found' });
     }
     
-    if (project.owner.toString() !== req.user.id) {
+    if (project.owner.toString() !== req.user._id.toString()) {
       return res.status(403).json({ message: 'Not authorized to access this instruction' });
     }
     
@@ -258,7 +258,7 @@ const getFieldInstructionsByStatus = async (req, res) => {
       return res.status(404).json({ message: 'Project not found' });
     }
     
-    if (project.owner.toString() !== req.user.id) {
+    if (project.owner.toString() !== req.user._id.toString()) {
       return res.status(403).json({ message: 'Not authorized to access this apartment' });
     }
     

@@ -18,7 +18,7 @@ const getSiteNotesByApartment = async (req, res) => {
       return res.status(404).json({ message: 'Project not found' });
     }
     
-    if (project.owner.toString() !== req.user.id) {
+    if (project.owner.toString() !== req.user._id.toString()) {
       return res.status(403).json({ message: 'Not authorized to access this apartment' });
     }
     
@@ -59,7 +59,7 @@ const createSiteNote = async (req, res) => {
       return res.status(404).json({ message: 'Project not found' });
     }
     
-    if (project.owner.toString() !== req.user.id) {
+    if (project.owner.toString() !== req.user._id.toString()) {
       return res.status(403).json({ message: 'Not authorized to create notes for this apartment' });
     }
     
@@ -124,7 +124,7 @@ const updateSiteNote = async (req, res) => {
       return res.status(404).json({ message: 'Project not found' });
     }
     
-    if (project.owner.toString() !== req.user.id) {
+    if (project.owner.toString() !== req.user._id.toString()) {
       return res.status(403).json({ message: 'Not authorized to update this note' });
     }
     
@@ -186,7 +186,7 @@ const deleteSiteNote = async (req, res) => {
       return res.status(404).json({ message: 'Project not found' });
     }
     
-    if (project.owner.toString() !== req.user.id) {
+    if (project.owner.toString() !== req.user._id.toString()) {
       return res.status(403).json({ message: 'Not authorized to delete this note' });
     }
     
@@ -223,7 +223,7 @@ const getSiteNoteById = async (req, res) => {
       return res.status(404).json({ message: 'Project not found' });
     }
     
-    if (project.owner.toString() !== req.user.id) {
+    if (project.owner.toString() !== req.user._id.toString()) {
       return res.status(403).json({ message: 'Not authorized to access this note' });
     }
     
@@ -250,7 +250,7 @@ const getSiteNotesByStatus = async (req, res) => {
       return res.status(404).json({ message: 'Project not found' });
     }
     
-    if (project.owner.toString() !== req.user.id) {
+    if (project.owner.toString() !== req.user._id.toString()) {
       return res.status(403).json({ message: 'Not authorized to access this apartment' });
     }
     
