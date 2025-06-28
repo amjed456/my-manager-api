@@ -90,7 +90,7 @@ const createProgressEntry = async (req, res) => {
 const updateProgressEntry = async (req, res) => {
   try {
     const { entryId } = req.params;
-    const {  workDescription, workPoints, images, hoursWorked, notes, date } = req.body;
+    const { workDescription, workPoints, images, hoursWorked, notes, date } = req.body;
     
     const entry = await ProgressEntry.findById(entryId);
     if (!entry) {
@@ -113,7 +113,7 @@ const updateProgressEntry = async (req, res) => {
     }
     
     // Update fields
-    if (summary !== undefined) entry.summary = summary;
+    if (workDescription !== undefined) entry.workDescription = workDescription;
     if (workPoints !== undefined) entry.workPoints = workPoints;
     if (images !== undefined) entry.images = images;
     if (hoursWorked !== undefined) entry.hoursWorked = hoursWorked;
