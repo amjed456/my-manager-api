@@ -111,9 +111,12 @@ const createFieldInstruction = async (req, res) => {
     if (materials) instructionText += `\n\nMaterials: ${materials}`;
     if (tools) instructionText += `\n\nTools: ${tools}`;
     if (safetyNotes) instructionText += `\n\nSafety Notes: ${safetyNotes}`;
+    
+    // Parse steps for storage
+    let parsedSteps = [];
     if (steps && typeof steps === 'string') {
       try {
-        const parsedSteps = JSON.parse(steps);
+        parsedSteps = JSON.parse(steps);
         if (Array.isArray(parsedSteps) && parsedSteps.length > 0) {
           instructionText += '\n\nSteps:';
           parsedSteps.forEach((step, index) => {
@@ -136,6 +139,7 @@ const createFieldInstruction = async (req, res) => {
       category: mappedCategory,
       assignedTo: assignedTo || null,
       instructions: instructionText,
+      steps: parsedSteps,
       dueDate: dueDate || null,
       attachments: attachments || [],
     });

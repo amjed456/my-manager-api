@@ -75,6 +75,11 @@ const fieldInstructionSchema = new mongoose.Schema(
       type: String,
       default: '',
     },
+    steps: [{
+      id: String,
+      description: String,
+      order: Number
+    }],
     attachments: [{
       url: {
         type: String,
