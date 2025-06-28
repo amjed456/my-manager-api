@@ -3,7 +3,6 @@ import api from './api';
 export interface SiteNote {
   _id: string;
   apartmentId: string;
-  date: string;
   noteType: string;
   priority: string;
   title: string;

@@ -13,7 +13,6 @@ import { siteNoteService } from "@/services/siteNoteService"
 
 interface SiteNote {
   _id: string
-  date: string
   noteType: string
   priority: string
   title: string
@@ -226,7 +225,7 @@ export default function SiteNotesList({ apartmentId }: SiteNotesListProps) {
               <CardContent className="pt-0">
                 <div className="flex items-center justify-between">
                   <div className="text-sm text-muted-foreground">
-                    {format(new Date(note.date), "PPP")} • Created {format(new Date(note.createdAt), "PPp")}
+                    Created {format(new Date(note.createdAt), "PPp")}
                   </div>
                   <Button
                     size="sm"
@@ -255,7 +254,7 @@ export default function SiteNotesList({ apartmentId }: SiteNotesListProps) {
                 <div>
                   <h4 className="font-semibold">{selectedNote.title}</h4>
                   <p className="text-sm text-muted-foreground">
-                    {format(new Date(selectedNote.date), "PPP")}
+                    {format(new Date(selectedNote.createdAt), "PPP")}
                   </p>
                 </div>
                 <Badge className={PRIORITY_COLORS[selectedNote.priority as keyof typeof PRIORITY_COLORS]}>
