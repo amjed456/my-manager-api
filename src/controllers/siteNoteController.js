@@ -73,6 +73,16 @@ const createSiteNote = async (req, res) => {
       return res.status(403).json({ message: 'Not authorized to create notes for this apartment' });
     }
     
+    // Map frontend priority values to backend enum values
+    const priorityMap = {
+      'low': 'Low',
+      'medium': 'Medium', 
+      'high': 'High',
+      'critical': 'Critical'
+    };
+    
+    const mappedPriority = priorityMap[priority?.toLowerCase()] || 'Medium';
+    
     const siteNote = new SiteNote({
       apartment: apartmentId,
       project: apartment.project,
@@ -80,7 +90,7 @@ const createSiteNote = async (req, res) => {
       title,
       description,
       images: images || [],
-      priority: priority || 'Medium',
+      priority: mappedPriority,
       category: category || noteType || 'Other',
       assignedTo: assignedTo || null,
       notes: notes || location || '',

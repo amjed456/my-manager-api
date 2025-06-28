@@ -71,6 +71,16 @@ const createFieldInstruction = async (req, res) => {
       return res.status(403).json({ message: 'Not authorized to create instructions for this apartment' });
     }
     
+    // Map frontend priority values to backend enum values
+    const priorityMap = {
+      'low': 'Low',
+      'medium': 'Medium', 
+      'high': 'High',
+      'urgent': 'Critical'  // frontend uses 'urgent', backend uses 'Critical'
+    };
+    
+    const mappedPriority = priorityMap[priority?.toLowerCase()] || 'Medium';
+    
     // Build instructions text from the various fields
     let instructionText = instructions || description || '';
     if (materials) instructionText += `\n\nMaterials: ${materials}`;
@@ -97,7 +107,7 @@ const createFieldInstruction = async (req, res) => {
       title,
       description,
       images: images || [],
-      priority: priority || 'Medium',
+      priority: mappedPriority,
       category: category || instructionType || 'Other',
       assignedTo: assignedTo || null,
       instructions: instructionText,
