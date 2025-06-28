@@ -45,7 +45,10 @@ const createSiteNote = async (req, res) => {
       priority, 
       category, 
       assignedTo, 
-      notes 
+      notes,
+      noteType,
+      location,
+      date
     } = req.body;
     
     // Check if user has access to the apartment
@@ -71,10 +74,16 @@ const createSiteNote = async (req, res) => {
       description,
       images: images || [],
       priority: priority || 'Medium',
-      category: category || 'Other',
+      category: category || noteType || 'Other',
       assignedTo: assignedTo || null,
-      notes: notes || '',
+      notes: notes || location || '',
     });
+    
+    // Handle file uploads
+    if (req.files && req.files.length > 0) {
+      const photoUrls = req.files.map(file => `data:${file.mimetype};base64,${file.buffer.toString('base64')}`);
+      siteNote.images = photoUrls.map(url => ({ url, caption: '', uploadedAt: new Date() }));
+    }
     
     await siteNote.save();
     

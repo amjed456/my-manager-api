@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const auth = require('../middleware/auth');
+const upload = require('../middleware/upload');
 const {
   getFieldInstructionsByApartment,
   createFieldInstruction,
@@ -20,7 +21,7 @@ router.get('/apartment/:apartmentId', getFieldInstructionsByApartment);
 router.get('/apartment/:apartmentId/status/:status', getFieldInstructionsByStatus);
 
 // Create a new field instruction for an apartment
-router.post('/apartment/:apartmentId', createFieldInstruction);
+router.post('/apartment/:apartmentId', upload, createFieldInstruction);
 
 // Get a single field instruction
 router.get('/:instructionId', getFieldInstructionById);

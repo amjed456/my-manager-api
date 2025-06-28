@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const auth = require('../middleware/auth');
+const upload = require('../middleware/upload');
 const {
   getSiteNotesByApartment,
   createSiteNote,
@@ -20,7 +21,7 @@ router.get('/apartment/:apartmentId', getSiteNotesByApartment);
 router.get('/apartment/:apartmentId/status/:status', getSiteNotesByStatus);
 
 // Create a new site note for an apartment
-router.post('/apartment/:apartmentId', createSiteNote);
+router.post('/apartment/:apartmentId', upload, createSiteNote);
 
 // Get a single site note
 router.get('/:noteId', getSiteNoteById);

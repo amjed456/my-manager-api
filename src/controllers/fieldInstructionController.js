@@ -47,7 +47,13 @@ const createFieldInstruction = async (req, res) => {
       assignedTo, 
       instructions,
       dueDate,
-      attachments
+      attachments,
+      instructionType,
+      location,
+      materials,
+      tools,
+      safetyNotes,
+      steps
     } = req.body;
     
     // Check if user has access to the apartment
@@ -65,6 +71,25 @@ const createFieldInstruction = async (req, res) => {
       return res.status(403).json({ message: 'Not authorized to create instructions for this apartment' });
     }
     
+    // Build instructions text from the various fields
+    let instructionText = instructions || description || '';
+    if (materials) instructionText += `\n\nMaterials: ${materials}`;
+    if (tools) instructionText += `\n\nTools: ${tools}`;
+    if (safetyNotes) instructionText += `\n\nSafety Notes: ${safetyNotes}`;
+    if (steps && typeof steps === 'string') {
+      try {
+        const parsedSteps = JSON.parse(steps);
+        if (Array.isArray(parsedSteps) && parsedSteps.length > 0) {
+          instructionText += '\n\nSteps:';
+          parsedSteps.forEach((step, index) => {
+            instructionText += `\n${index + 1}. ${step.description}`;
+          });
+        }
+      } catch (e) {
+        console.error('Error parsing steps:', e);
+      }
+    }
+    
     const fieldInstruction = new FieldInstruction({
       apartment: apartmentId,
       project: apartment.project,
@@ -73,12 +98,18 @@ const createFieldInstruction = async (req, res) => {
       description,
       images: images || [],
       priority: priority || 'Medium',
-      category: category || 'Other',
+      category: category || instructionType || 'Other',
       assignedTo: assignedTo || null,
-      instructions: instructions || '',
+      instructions: instructionText,
       dueDate: dueDate || null,
       attachments: attachments || [],
     });
+    
+    // Handle file uploads
+    if (req.files && req.files.length > 0) {
+      const photoUrls = req.files.map(file => `data:${file.mimetype};base64,${file.buffer.toString('base64')}`);
+      fieldInstruction.images = photoUrls.map(url => ({ url, caption: '', uploadedAt: new Date() }));
+    }
     
     await fieldInstruction.save();
     
