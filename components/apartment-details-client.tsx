@@ -37,6 +37,7 @@ export default function ApartmentDetailsClient({ apartmentId }: { apartmentId: s
     const fetchApartment = async () => {
       try {
         console.log('=== APARTMENT DETAILS AUTH CHECK ===');
+        console.log('Apartment ID received:', apartmentId);
         
         // Check if user is authenticated first
         const isAuth = authService.isAuthenticated();
@@ -47,7 +48,10 @@ export default function ApartmentDetailsClient({ apartmentId }: { apartmentId: s
           setAuthChecked(true)
           if (typeof window !== 'undefined') {
             console.log('Performing redirect to home page');
-            window.location.href = '/';
+            // Instead of immediate redirect, let's show an error first
+            setError("Authentication required. Please log in.");
+            setIsLoading(false);
+            return;
           }
           return
         }
@@ -68,9 +72,8 @@ export default function ApartmentDetailsClient({ apartmentId }: { apartmentId: s
           if (profileErr?.response?.status === 401) {
             console.log('Profile fetch failed with 401 - user not authenticated');
             authService.logout();
-            if (typeof window !== 'undefined') {
-              window.location.href = '/';
-            }
+            setError("Session expired. Please log in again.");
+            setIsLoading(false);
             return;
           }
         }
@@ -101,11 +104,10 @@ export default function ApartmentDetailsClient({ apartmentId }: { apartmentId: s
         
         // Handle specific error cases
         if (err?.response?.status === 401) {
-          console.log("Authentication error - redirecting to home")
+          console.log("Authentication error - setting error message instead of redirect")
           authService.logout()
-          if (typeof window !== 'undefined') {
-            window.location.href = '/';
-          }
+          setError("Authentication failed. Please log in again.");
+          setIsLoading(false);
           return
         } else if (err?.response?.status === 404) {
           setError("Apartment not found. It may have been deleted.")

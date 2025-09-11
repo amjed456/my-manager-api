@@ -11,14 +11,15 @@ export function generateStaticParams() {
 }
 
 // Server component that passes params to client component
-export default function ProjectDetailsPage({ params }: { params: { id: string } }) {
-  // Log the params and explicitly extract the ID
-  console.log("Server component params:", params)
-  const projectId = params?.id
+export default async function ProjectDetailsPage({ params }: { params: Promise<{ id: string }> }) {
+  // Await the params as required by Next.js 15
+  const { id } = await params
+  
+  console.log("Server component project ID:", id)
   
   // Add validation to ensure we have a valid ID
-  if (!projectId) {
-  return (
+  if (!id) {
+    return (
       <div className="flex min-h-screen flex-col items-center justify-center p-4">
         <div className="text-center">
           <p className="text-red-500 font-medium">Invalid project ID</p>
@@ -26,10 +27,10 @@ export default function ProjectDetailsPage({ params }: { params: { id: string } 
             Back to Projects
           </a>
         </div>
-    </div>
-  )
+      </div>
+    )
   }
   
   // Pass the extracted ID directly instead of the params object
-  return <ProjectDetailsClient projectId={projectId} />
+  return <ProjectDetailsClient projectId={id} />
 }

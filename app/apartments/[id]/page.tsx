@@ -14,6 +14,17 @@ interface ApartmentDetailsPageProps {
   params: Promise<{ id: string }>
 }
 
+// Generate static params for build time - include common patterns
+export function generateStaticParams() {
+  // Include dummy IDs for static export, but avoid 'details' to prevent conflicts
+  return [
+    { id: "placeholder" },
+    { id: "demo-apartment" },
+    { id: "sample-apartment" },
+    { id: "static-apartment" }
+  ]
+}
+
 export default async function ApartmentDetailsPage({ params }: ApartmentDetailsPageProps) {
   const { id } = await params
 
@@ -21,6 +32,8 @@ export default async function ApartmentDetailsPage({ params }: ApartmentDetailsP
     notFound()
   }
 
+  // For static export, we'll let the client component handle the actual ID
+  // This allows any apartment ID to work, not just the pre-generated ones
   return (
     <div className="container mx-auto py-6 space-y-6">
       <Suspense fallback={<div>Loading apartment details...</div>}>

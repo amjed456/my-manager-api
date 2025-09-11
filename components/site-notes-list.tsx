@@ -76,11 +76,13 @@ export default function SiteNotesList({ apartmentId }: SiteNotesListProps) {
   }
 
   const getPriorityCount = (priority: string) => {
-    return siteNotes.filter(note => note.priority === priority).length
+    const count = siteNotes.filter(note => note.priority === priority).length
+    console.log(`Priority count for "${priority}":`, count, 'Notes:', siteNotes.map(n => n.priority))
+    return count
   }
 
   const getCriticalNotes = () => {
-    return siteNotes.filter(note => note.priority === "critical" || note.priority === "high")
+    return siteNotes.filter(note => note.priority === "Critical" || note.priority === "High")
   }
 
   if (isLoading) {
@@ -163,19 +165,19 @@ export default function SiteNotesList({ apartmentId }: SiteNotesListProps) {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
           <div className="bg-green-50 p-3 rounded-lg">
             <div className="text-sm text-green-600">Low</div>
-            <div className="text-lg font-semibold text-green-800">{getPriorityCount("low")}</div>
+            <div className="text-lg font-semibold text-green-800">{getPriorityCount("Low")}</div>
           </div>
           <div className="bg-yellow-50 p-3 rounded-lg">
             <div className="text-sm text-yellow-600">Medium</div>
-            <div className="text-lg font-semibold text-yellow-800">{getPriorityCount("medium")}</div>
+            <div className="text-lg font-semibold text-yellow-800">{getPriorityCount("Medium")}</div>
           </div>
           <div className="bg-red-50 p-3 rounded-lg">
             <div className="text-sm text-red-600">High</div>
-            <div className="text-lg font-semibold text-red-800">{getPriorityCount("high")}</div>
+            <div className="text-lg font-semibold text-red-800">{getPriorityCount("High")}</div>
           </div>
           <div className="bg-red-100 p-3 rounded-lg">
             <div className="text-sm text-red-700">Critical</div>
-            <div className="text-lg font-semibold text-red-900">{getPriorityCount("critical")}</div>
+            <div className="text-lg font-semibold text-red-900">{getPriorityCount("Critical")}</div>
           </div>
         </div>
       )}

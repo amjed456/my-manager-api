@@ -107,7 +107,8 @@ export default function ApartmentList({ projectId, onApartmentUpdate }: Apartmen
   }
 
   const handleApartmentClick = (apartmentId: string) => {
-    router.push(`/apartments/${apartmentId}`)
+    // Use query parameters for static export compatibility
+    router.push(`/apartments/details/?id=${apartmentId}`)
   }
 
   if (isLoading) {
