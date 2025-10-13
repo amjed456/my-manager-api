@@ -4,8 +4,11 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Plus, FileText, Eye, MapPin, Calendar, User, CheckCircle, Clock } from "lucide-react"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Progress } from "@/components/ui/progress"
+import { Plus, FileText, Eye, MapPin, Calendar, User, CheckCircle, Clock, Settings } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { format } from "date-fns"
 import FieldInstructionForm from "./field-instruction-form"
 import { toast } from "sonner"
@@ -27,6 +30,9 @@ interface FieldInstruction {
     id: string
     description: string
     order: number
+    completed: boolean
+    completedAt?: string
+    completedBy?: string
   }>
   images: Array<{
     url: string
@@ -39,6 +45,7 @@ interface FieldInstruction {
 
 interface FieldInstructionsListProps {
   apartmentId: string
+  onInstructionUpdate?: () => void
 }
 
 const PRIORITY_COLORS = {
@@ -54,7 +61,7 @@ const STATUS_COLORS = {
   "Completed": "bg-green-100 text-green-800"
 }
 
-export default function FieldInstructionsList({ apartmentId }: FieldInstructionsListProps) {
+export default function FieldInstructionsList({ apartmentId, onInstructionUpdate }: FieldInstructionsListProps) {
   const [instructions, setInstructions] = useState<FieldInstruction[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState("")
@@ -107,6 +114,44 @@ export default function FieldInstructionsList({ apartmentId }: FieldInstructions
     return instructions.filter(instruction => 
       instruction.dueDate && new Date(instruction.dueDate) < today && instruction.status !== "Completed"
     )
+  }
+
+  const getInstructionProgress = (instruction: FieldInstruction) => {
+    if (!instruction.steps || instruction.steps.length === 0) return 0
+    const completedSteps = instruction.steps.filter(step => step.completed).length
+    return Math.round((completedSteps / instruction.steps.length) * 100)
+  }
+
+  const handleStepToggle = async (instructionId: string, stepId: string, completed: boolean) => {
+    try {
+      await fieldInstructionService.updateStepCompletion(instructionId, stepId, completed)
+      // Refresh the instructions list
+      fetchInstructions()
+      // Notify parent component to update overall progress
+      if (onInstructionUpdate) {
+        onInstructionUpdate()
+      }
+      toast.success(completed ? "Step marked as completed" : "Step marked as incomplete")
+    } catch (error) {
+      console.error("Failed to update step completion:", error)
+      toast.error("Failed to update step completion")
+    }
+  }
+
+  const handleStatusChange = async (instructionId: string, newStatus: string) => {
+    try {
+      await fieldInstructionService.updateInstructionStatus(instructionId, newStatus as "Created" | "Work Started" | "Completed")
+      // Refresh the instructions list
+      fetchInstructions()
+      // Notify parent component to update overall progress
+      if (onInstructionUpdate) {
+        onInstructionUpdate()
+      }
+      toast.success(`Instruction status updated to ${newStatus}`)
+    } catch (error) {
+      console.error("Failed to update instruction status:", error)
+      toast.error("Failed to update instruction status")
+    }
   }
 
   if (isLoading) {
@@ -260,22 +305,49 @@ export default function FieldInstructionsList({ apartmentId }: FieldInstructions
                         {instruction.images.length} photos
                       </Badge>
                     )}
+                    <Badge variant="outline" className="bg-blue-50 text-blue-700">
+                      {getInstructionProgress(instruction)}% complete
+                    </Badge>
                   </div>
                 </div>
               </CardHeader>
               <CardContent className="pt-0">
+                {/* Progress Bar */}
+                <div className="mb-3">
+                  <div className="flex items-center justify-between text-sm text-muted-foreground mb-1">
+                    <span>Progress</span>
+                    <span>{getInstructionProgress(instruction)}%</span>
+                  </div>
+                  <Progress value={getInstructionProgress(instruction)} className="h-2" />
+                </div>
+                
                 <div className="flex items-center justify-between">
                   <div className="text-sm text-muted-foreground">
                     Created {format(new Date(instruction.createdAt), "PPp")}
                   </div>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleViewInstruction(instruction)}
-                  >
-                    <Eye className="h-4 w-4 mr-1" />
-                    View Details
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Select
+                      value={instruction.status}
+                      onValueChange={(value) => handleStatusChange(instruction._id, value)}
+                    >
+                      <SelectTrigger className="w-32 h-8 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Created">Created</SelectItem>
+                        <SelectItem value="Work Started">Work Started</SelectItem>
+                        <SelectItem value="Completed">Completed</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleViewInstruction(instruction)}
+                    >
+                      <Eye className="h-4 w-4 mr-1" />
+                      View Details
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -360,12 +432,37 @@ export default function FieldInstructionsList({ apartmentId }: FieldInstructions
                         {step.order}
                       </div>
                       <div className="flex-1">
-                        <p className="text-sm">{step.description}</p>
+                        <div className="flex items-start gap-3">
+                          <Checkbox
+                            checked={step.completed}
+                            onCheckedChange={(checked) => handleStepToggle(selectedInstruction._id, step.id, checked as boolean)}
+                            className="mt-1"
+                          />
+                          <div className="flex-1">
+                            <p className={`text-sm ${step.completed ? 'line-through text-muted-foreground' : ''}`}>
+                              {step.description}
+                            </p>
+                            {step.completed && step.completedAt && (
+                              <p className="text-xs text-green-600 mt-1">
+                                Completed {format(new Date(step.completedAt), "PPp")}
+                              </p>
+                            )}
+                          </div>
+                        </div>
                       </div>
                     </div>
                   )) || (
                     <p className="text-sm text-muted-foreground">No steps defined</p>
                   )}
+                </div>
+                
+                {/* Instruction Progress */}
+                <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+                  <div className="flex items-center justify-between text-sm text-muted-foreground mb-2">
+                    <span>Overall Progress</span>
+                    <span>{getInstructionProgress(selectedInstruction)}%</span>
+                  </div>
+                  <Progress value={getInstructionProgress(selectedInstruction)} className="h-2" />
                 </div>
               </div>
 

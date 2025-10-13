@@ -17,6 +17,9 @@ export interface FieldInstruction {
     id: string;
     description: string;
     order: number;
+    completed: boolean;
+    completedAt?: string;
+    completedBy?: string;
   }>;
   images: Array<{
     url: string;
@@ -134,6 +137,17 @@ export const fieldInstructionService = {
       return response.data;
     } catch (error) {
       console.error('Error updating instruction status:', error);
+      throw error;
+    }
+  },
+
+  // Update step completion status
+  async updateStepCompletion(instructionId: string, stepId: string, completed: boolean): Promise<FieldInstruction> {
+    try {
+      const response = await api.patch(`/field-instructions/${instructionId}/steps/${stepId}`, { completed });
+      return response.data;
+    } catch (error) {
+      console.error('Error updating step completion:', error);
       throw error;
     }
   }

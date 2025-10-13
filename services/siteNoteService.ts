@@ -8,6 +8,10 @@ export interface SiteNote {
   title: string;
   description: string;
   location: string;
+  status: 'Open' | 'In Progress' | 'Closed' | 'Completed';
+  completed: boolean;
+  completedAt?: string;
+  completedBy?: string;
   images: Array<{
     url: string;
     caption?: string;
@@ -34,7 +38,7 @@ export interface UpdateSiteNoteData {
     url: string;
     caption?: string;
   }[];
-  status?: 'Open' | 'In Progress' | 'Closed';
+  status?: 'Open' | 'In Progress' | 'Closed' | 'Completed';
   priority?: 'Low' | 'Medium' | 'High' | 'Critical';
   category?: 'Structural' | 'Electrical' | 'Plumbing' | 'HVAC' | 'Finishing' | 'Other';
   assignedTo?: string;
@@ -104,6 +108,17 @@ export const siteNoteService = {
       return response.data;
     } catch (error) {
       console.error('Error fetching site note:', error);
+      throw error;
+    }
+  },
+
+  // Toggle site note completion status
+  async toggleCompletion(noteId: string, completed: boolean): Promise<SiteNote> {
+    try {
+      const response = await api.patch(`/site-notes/${noteId}/completion`, { completed });
+      return response.data;
+    } catch (error) {
+      console.error('Error toggling site note completion:', error);
       throw error;
     }
   }

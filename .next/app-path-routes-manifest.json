@@ -1,0 +1,13 @@
+{
+  "/_not-found/page": "/_not-found",
+  "/favicon.ico/route": "/favicon.ico",
+  "/apartments/details/page": "/apartments/details",
+  "/page": "/",
+  "/profile/page": "/profile",
+  "/projects/details/page": "/projects/details",
+  "/alerts/page": "/alerts",
+  "/projects/new/page": "/projects/new",
+  "/projects/page": "/projects",
+  "/apartments/[id]/page": "/apartments/[id]",
+  "/projects/[id]/page": "/projects/[id]"
+}

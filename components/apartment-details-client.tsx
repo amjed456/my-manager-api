@@ -22,6 +22,7 @@ import {
 import SiteNotesList from "./site-notes-list"
 import FieldInstructionsList from "./field-instructions-list"
 import ProgressList from "./progress-list"
+import { fieldInstructionService } from "@/services/fieldInstructionService"
 
 export default function ApartmentDetailsClient({ apartmentId }: { apartmentId: string }) {
   const router = useRouter()
@@ -32,6 +33,37 @@ export default function ApartmentDetailsClient({ apartmentId }: { apartmentId: s
   const [currentUserId, setCurrentUserId] = useState("")
   const [updating, setUpdating] = useState(false)
   const [authChecked, setAuthChecked] = useState(false)
+  const [instructions, setInstructions] = useState<any[]>([])
+  const [overallProgress, setOverallProgress] = useState(0)
+
+  // Calculate overall progress based on instruction completion
+  const calculateOverallProgress = (instructions: any[]) => {
+    if (!instructions || instructions.length === 0) return 0
+    
+    let totalSteps = 0
+    let completedSteps = 0
+    
+    instructions.forEach(instruction => {
+      if (instruction.steps && instruction.steps.length > 0) {
+        totalSteps += instruction.steps.length
+        completedSteps += instruction.steps.filter((step: any) => step.completed).length
+      }
+    })
+    
+    return totalSteps > 0 ? Math.round((completedSteps / totalSteps) * 100) : 0
+  }
+
+  // Fetch instructions to calculate progress
+  const fetchInstructions = async () => {
+    try {
+      const data = await fieldInstructionService.getFieldInstructions(apartmentId)
+      setInstructions(data)
+      const progress = calculateOverallProgress(data)
+      setOverallProgress(progress)
+    } catch (error) {
+      console.error("Failed to fetch instructions:", error)
+    }
+  }
 
   useEffect(() => {
     const fetchApartment = async () => {
@@ -95,6 +127,9 @@ export default function ApartmentDetailsClient({ apartmentId }: { apartmentId: s
           console.log("Apartment data received:", data)
           setApartment(data)
           setIsPermissionError(false)
+          
+          // Fetch instructions to calculate progress
+          await fetchInstructions()
         } catch (fetchErr: any) {
           console.error("API error details:", fetchErr?.response?.data)
           throw fetchErr
@@ -263,10 +298,13 @@ export default function ApartmentDetailsClient({ apartmentId }: { apartmentId: s
 
         <div className="mt-4 space-y-2">
           <div className="flex justify-between text-sm">
-            <span>Progress</span>
-            <span>{apartment.progress}%</span>
+            <span>Overall Progress</span>
+            <span>{overallProgress}%</span>
           </div>
-          <Progress value={apartment.progress} className="h-2" />
+          <Progress value={overallProgress} className="h-2" />
+          <div className="text-xs text-muted-foreground">
+            Based on {instructions.length} instruction{instructions.length !== 1 ? 's' : ''} with completed steps
+          </div>
         </div>
 
         <div className="flex justify-between mt-4">
@@ -295,7 +333,7 @@ export default function ApartmentDetailsClient({ apartmentId }: { apartmentId: s
             <SiteNotesList apartmentId={apartmentId} />
           </TabsContent>
           <TabsContent value="instructions" className="p-4">
-            <FieldInstructionsList apartmentId={apartmentId} />
+            <FieldInstructionsList apartmentId={apartmentId} onInstructionUpdate={fetchInstructions} />
           </TabsContent>
         </Tabs>
       </div>

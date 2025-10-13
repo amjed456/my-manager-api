@@ -4,7 +4,8 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Plus, FileText, Eye, MapPin, AlertTriangle } from "lucide-react"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Plus, FileText, Eye, MapPin, AlertTriangle, CheckCircle } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { format } from "date-fns"
 import SiteNoteForm from "./site-note-form"
@@ -18,6 +19,10 @@ interface SiteNote {
   title: string
   description: string
   location: string
+  status: 'Open' | 'In Progress' | 'Closed' | 'Completed'
+  completed: boolean
+  completedAt?: string
+  completedBy?: string
   images: Array<{
     url: string
     caption?: string
@@ -83,6 +88,18 @@ export default function SiteNotesList({ apartmentId }: SiteNotesListProps) {
 
   const getCriticalNotes = () => {
     return siteNotes.filter(note => note.priority === "Critical" || note.priority === "High")
+  }
+
+  const handleCompletionToggle = async (noteId: string, completed: boolean) => {
+    try {
+      await siteNoteService.toggleCompletion(noteId, completed)
+      // Refresh the site notes list
+      fetchSiteNotes()
+      toast.success(completed ? "Site note marked as completed" : "Site note marked as incomplete")
+    } catch (error) {
+      console.error("Failed to update site note completion:", error)
+      toast.error("Failed to update site note completion")
+    }
   }
 
   if (isLoading) {
@@ -196,10 +213,18 @@ export default function SiteNotesList({ apartmentId }: SiteNotesListProps) {
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
-                      <CardTitle className="text-base">{note.title}</CardTitle>
+                      <CardTitle className={`text-base ${note.completed ? 'line-through text-muted-foreground' : ''}`}>
+                        {note.title}
+                      </CardTitle>
                       <Badge className={PRIORITY_COLORS[note.priority as keyof typeof PRIORITY_COLORS]}>
                         {note.priority}
                       </Badge>
+                      {note.completed && (
+                        <Badge className="bg-green-100 text-green-800">
+                          <CheckCircle className="h-3 w-3 mr-1" />
+                          Completed
+                        </Badge>
+                      )}
                     </div>
                     <div className="flex items-center gap-4 text-sm text-muted-foreground">
                       <span className="flex items-center gap-1">
@@ -226,8 +251,19 @@ export default function SiteNotesList({ apartmentId }: SiteNotesListProps) {
               </CardHeader>
               <CardContent className="pt-0">
                 <div className="flex items-center justify-between">
-                  <div className="text-sm text-muted-foreground">
-                    Created {format(new Date(note.createdAt), "PPp")}
+                  <div className="flex items-center gap-3">
+                    <Checkbox
+                      checked={note.completed}
+                      onCheckedChange={(checked) => handleCompletionToggle(note._id, checked as boolean)}
+                    />
+                    <div className="text-sm text-muted-foreground">
+                      Created {format(new Date(note.createdAt), "PPp")}
+                      {note.completed && note.completedAt && (
+                        <div className="text-xs text-green-600">
+                          Completed {format(new Date(note.completedAt), "PPp")}
+                        </div>
+                      )}
+                    </div>
                   </div>
                   <Button
                     size="sm"
