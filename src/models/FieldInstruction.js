@@ -78,7 +78,20 @@ const fieldInstructionSchema = new mongoose.Schema(
     steps: [{
       id: String,
       description: String,
-      order: Number
+      order: Number,
+      completed: {
+        type: Boolean,
+        default: false
+      },
+      completedAt: {
+        type: Date,
+        default: null
+      },
+      completedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        default: null
+      }
     }],
     attachments: [{
       url: {

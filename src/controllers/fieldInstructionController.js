@@ -340,6 +340,70 @@ const getFieldInstructionsByStatus = async (req, res) => {
   }
 };
 
+// Update step completion status
+const updateStepCompletion = async (req, res) => {
+  try {
+    const { instructionId, stepId } = req.params;
+    const { completed } = req.body;
+    
+    const fieldInstruction = await FieldInstruction.findById(instructionId);
+    if (!fieldInstruction) {
+      return res.status(404).json({ message: 'Field instruction not found' });
+    }
+    
+    // Check if user has access to the apartment
+    const apartment = await Apartment.findById(fieldInstruction.apartment);
+    if (!apartment) {
+      return res.status(404).json({ message: 'Apartment not found' });
+    }
+    
+    const project = await Project.findById(apartment.project);
+    if (!project) {
+      return res.status(404).json({ message: 'Project not found' });
+    }
+    
+    if (project.owner.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Not authorized to update this instruction' });
+    }
+    
+    // Find and update the step
+    const stepIndex = fieldInstruction.steps.findIndex(step => step.id === stepId);
+    if (stepIndex === -1) {
+      return res.status(404).json({ message: 'Step not found' });
+    }
+    
+    // Update step completion
+    fieldInstruction.steps[stepIndex].completed = completed;
+    if (completed) {
+      fieldInstruction.steps[stepIndex].completedAt = new Date();
+      fieldInstruction.steps[stepIndex].completedBy = req.user._id;
+    } else {
+      fieldInstruction.steps[stepIndex].completedAt = null;
+      fieldInstruction.steps[stepIndex].completedBy = null;
+    }
+    
+    // Check if all steps are completed to update instruction status
+    const allStepsCompleted = fieldInstruction.steps.every(step => step.completed);
+    if (allStepsCompleted && fieldInstruction.status !== 'Completed') {
+      fieldInstruction.status = 'Completed';
+      fieldInstruction.completionDate = new Date();
+    } else if (!allStepsCompleted && fieldInstruction.status === 'Completed') {
+      fieldInstruction.status = 'Work Started';
+      fieldInstruction.completionDate = null;
+    }
+    
+    await fieldInstruction.save();
+    
+    // Populate author info for response
+    await fieldInstruction.populate('author', 'name email');
+    
+    res.json(fieldInstruction);
+  } catch (error) {
+    console.error('Error updating step completion:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
 module.exports = {
   getFieldInstructionsByApartment,
   createFieldInstruction,
@@ -347,4 +411,5 @@ module.exports = {
   deleteFieldInstruction,
   getFieldInstructionById,
   getFieldInstructionsByStatus,
+  updateStepCompletion,
 }; 

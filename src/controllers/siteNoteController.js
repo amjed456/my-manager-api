@@ -198,9 +198,20 @@ const updateSiteNote = async (req, res) => {
       siteNote.startDate = new Date();
     }
     
-    // Auto-set completion date when status changes to 'Closed'
-    if (status === 'Closed' && !siteNote.completionDate) {
+    // Auto-set completion date when status changes to 'Closed' or 'Completed'
+    if ((status === 'Closed' || status === 'Completed') && !siteNote.completionDate) {
       siteNote.completionDate = new Date();
+    }
+    
+    // Handle completion status
+    if (status === 'Completed') {
+      siteNote.completed = true;
+      siteNote.completedAt = new Date();
+      siteNote.completedBy = req.user._id;
+    } else if (status !== 'Completed' && siteNote.completed) {
+      siteNote.completed = false;
+      siteNote.completedAt = null;
+      siteNote.completedBy = null;
     }
     
     await siteNote.save();
@@ -322,6 +333,61 @@ const getSiteNotesByStatus = async (req, res) => {
   }
 };
 
+// Toggle site note completion status
+const toggleSiteNoteCompletion = async (req, res) => {
+  try {
+    const { noteId } = req.params;
+    const { completed } = req.body;
+    
+    const siteNote = await SiteNote.findById(noteId);
+    if (!siteNote) {
+      return res.status(404).json({ message: 'Site note not found' });
+    }
+    
+    // Check if user has access to the apartment
+    const apartment = await Apartment.findById(siteNote.apartment);
+    if (!apartment) {
+      return res.status(404).json({ message: 'Apartment not found' });
+    }
+    
+    const project = await Project.findById(apartment.project);
+    if (!project) {
+      return res.status(404).json({ message: 'Project not found' });
+    }
+    
+    if (project.owner.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Not authorized to update this note' });
+    }
+    
+    // Update completion status
+    siteNote.completed = completed;
+    if (completed) {
+      siteNote.status = 'Completed';
+      siteNote.completedAt = new Date();
+      siteNote.completedBy = req.user._id;
+      siteNote.completionDate = new Date();
+    } else {
+      siteNote.status = 'Open';
+      siteNote.completedAt = null;
+      siteNote.completedBy = null;
+      siteNote.completionDate = null;
+    }
+    
+    await siteNote.save();
+    
+    // Populate author and assignedTo info for response
+    await siteNote.populate('author', 'name email');
+    if (siteNote.assignedTo) {
+      await siteNote.populate('assignedTo', 'name email');
+    }
+    
+    res.json(siteNote);
+  } catch (error) {
+    console.error('Error toggling site note completion:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
 module.exports = {
   getSiteNotesByApartment,
   createSiteNote,
@@ -329,4 +395,5 @@ module.exports = {
   deleteSiteNote,
   getSiteNoteById,
   getSiteNotesByStatus,
+  toggleSiteNoteCompletion,
 }; 
