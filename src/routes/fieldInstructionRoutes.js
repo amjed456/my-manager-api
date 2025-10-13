@@ -9,6 +9,7 @@ const {
   deleteFieldInstruction,
   getFieldInstructionById,
   getFieldInstructionsByStatus,
+  updateStepCompletion,
 } = require('../controllers/fieldInstructionController');
 
 // All routes require authentication
@@ -31,5 +32,8 @@ router.put('/:instructionId', updateFieldInstruction);
 
 // Delete a field instruction
 router.delete('/:instructionId', deleteFieldInstruction);
+
+// Update step completion status
+router.patch('/:instructionId/steps/:stepId', updateStepCompletion);
 
 module.exports = router; 

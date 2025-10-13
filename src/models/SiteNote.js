@@ -28,8 +28,21 @@ const siteNoteSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ['Open', 'In Progress', 'Closed'],
+      enum: ['Open', 'In Progress', 'Closed', 'Completed'],
       default: 'Open',
+    },
+    completed: {
+      type: Boolean,
+      default: false,
+    },
+    completedAt: {
+      type: Date,
+      default: null,
+    },
+    completedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      default: null,
     },
     images: [{
       url: {

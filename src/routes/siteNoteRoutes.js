@@ -9,6 +9,7 @@ const {
   deleteSiteNote,
   getSiteNoteById,
   getSiteNotesByStatus,
+  toggleSiteNoteCompletion,
 } = require('../controllers/siteNoteController');
 
 // All routes require authentication
@@ -31,5 +32,8 @@ router.put('/:noteId', updateSiteNote);
 
 // Delete a site note
 router.delete('/:noteId', deleteSiteNote);
+
+// Toggle site note completion status
+router.patch('/:noteId/completion', toggleSiteNoteCompletion);
 
 module.exports = router; 
